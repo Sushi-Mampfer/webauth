@@ -1,0 +1,11 @@
+Windows Registry Editor Version 5.00
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Authentication\Credential Providers\{7d6836a5-c203-47e2-8fe5-eca9159e7d7e}]
+@="webauth"
+
+[HKEY_CLASSES_ROOT\CLSID\{7d6836a5-c203-47e2-8fe5-eca9159e7d7e}]
+@="webauth"
+
+[HKEY_CLASSES_ROOT\CLSID\{7d6836a5-c203-47e2-8fe5-eca9159e7d7e}\InprocServer32]
+@="webauth.dll"
+"ThreadingModel"="Apartment"
