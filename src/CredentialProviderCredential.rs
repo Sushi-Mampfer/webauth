@@ -1,7 +1,7 @@
 use std::{ffi::OsString, os::windows::ffi::OsStrExt};
 
 use windows::Win32::{
-    Foundation::E_NOTIMPL,
+    Foundation::{E_NOTIMPL, NOERROR},
     Graphics::Gdi::{
         BLACKNESS, CreateCompatibleBitmap, CreateCompatibleDC, DeleteDC, HBITMAP, PatBlt,
         SelectObject,
@@ -12,12 +12,17 @@ use windows::Win32::{
         CPFIS_NONE, CPFS_DISPLAY_IN_BOTH, CPGSR_NO_CREDENTIAL_FINISHED,
         CPGSR_RETURN_CREDENTIAL_FINISHED, CREDENTIAL_PROVIDER_CREDENTIAL_SERIALIZATION,
         ICredentialProviderCredential, ICredentialProviderCredential_Impl,
+        ICredentialProviderCredentialEvents,
     },
 };
 use windows_core::{GUID, PWSTR, implement};
 
 #[implement(ICredentialProviderCredential)]
-pub struct CredentialProviderCredential();
+pub struct CredentialProviderCredential {
+    pub computername: String,
+    pub username: String,
+    pub password: String,
+}
 
 impl ICredentialProviderCredential_Impl for CredentialProviderCredential_Impl {
     fn Advise(
@@ -187,7 +192,7 @@ impl ICredentialProviderCredential_Impl for CredentialProviderCredential_Impl {
 
             mem_pcpcs.write(CREDENTIAL_PROVIDER_CREDENTIAL_SERIALIZATION {
                 ulAuthenticationPackage: 0,
-                clsidCredentialProvider: GUID::from_u128(0x7d6836a5_c203_47e2_8fe5_eca9159e7d7e),
+                clsidCredentialProvider: GUID::from_u128(0x7d6836a5c20347e28fe5eca9159e7d7e),
                 cbSerialization: buffer_size,
                 rgbSerialization: buffer,
             });

@@ -74,14 +74,15 @@ impl IClassFactory_Impl for ProviderFactory_Impl {
             return Err(CLASS_E_NOAGGREGATION.into());
         }
 
-        // We're only handling requests for `IID_ICredentialProvider`
         if riid != ICredentialProvider::IID {
             return Err(E_NOINTERFACE.into());
         }
 
-        // Construct credential provider and return it as an `ICredentialProvider`
-        // interface
-        let provider: ICredentialProvider = CredentialProvider::CredentialProvider {}.into();
+        let provider = match CredentialProvider::CredentialProvider::new() {
+            Some(p) => p,
+            _ => return Err(E_NOINTERFACE.into()),
+        };
+        let provider: ICredentialProvider = provider.into();
         unsafe { *ppvobject = mem::transmute(provider) };
         Ok(())
     }

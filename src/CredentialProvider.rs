@@ -1,4 +1,4 @@
-use std::{ffi::OsString, os::windows::ffi::OsStrExt};
+use std::{cell::RefCell, env::var, ffi::OsString, ops::Deref, os::windows::ffi::OsStrExt};
 
 use windows::Win32::{
     Foundation::{E_NOTIMPL, S_FALSE},
@@ -7,15 +7,31 @@ use windows::Win32::{
         CPFG_CREDENTIAL_PROVIDER_LABEL, CPFG_CREDENTIAL_PROVIDER_LOGO,
         CPFG_STANDALONE_SUBMIT_BUTTON, CPFT_LARGE_TEXT, CPFT_SUBMIT_BUTTON, CPFT_TILE_IMAGE,
         CPUS_LOGON, CREDENTIAL_PROVIDER_FIELD_DESCRIPTOR, CREDENTIAL_PROVIDER_USAGE_SCENARIO,
-        ICredentialProvider, ICredentialProvider_Impl,
+        ICredentialProvider, ICredentialProvider_Impl, ICredentialProviderEvents,
     },
 };
-use windows_core::{PWSTR, implement};
+use windows_core::{PWSTR, Ref, implement};
 
 use crate::CredentialProviderCredential;
 
 #[implement(ICredentialProvider)]
-pub struct CredentialProvider();
+pub struct CredentialProvider {
+    event: RefCell<Option<ICredentialProviderEvents>>,
+    computername: String,
+    username: RefCell<Option<String>>,
+    password: RefCell<Option<String>>,
+}
+
+impl CredentialProvider {
+    pub fn new() -> Option<Self> {
+        Some(Self {
+            event: RefCell::new(None),
+            computername: var("computername").ok()?,
+            username: RefCell::new(None),
+            password: RefCell::new(None),
+        })
+    }
+}
 
 impl ICredentialProvider_Impl for CredentialProvider_Impl {
     fn SetUsageScenario(
@@ -41,15 +57,17 @@ impl ICredentialProvider_Impl for CredentialProvider_Impl {
         pcpe: windows_core::Ref<windows::Win32::UI::Shell::ICredentialProviderEvents>,
         upadvisecontext: usize,
     ) -> windows_core::Result<()> {
-        Err(E_NOTIMPL.into())
+        *self.event.borrow_mut() = pcpe.cloned();
+        Ok(())
     }
 
     fn UnAdvise(&self) -> windows_core::Result<()> {
-        Err(E_NOTIMPL.into())
+        *self.event.borrow_mut() = None;
+        Ok(())
     }
 
     fn GetFieldDescriptorCount(&self) -> windows_core::Result<u32> {
-        Ok(3)
+        Ok(0)
     }
 
     fn GetFieldDescriptorAt(
@@ -57,58 +75,7 @@ impl ICredentialProvider_Impl for CredentialProvider_Impl {
         dwindex: u32,
     ) -> windows_core::Result<*mut windows::Win32::UI::Shell::CREDENTIAL_PROVIDER_FIELD_DESCRIPTOR>
     {
-        unsafe {
-            let mem: *mut CREDENTIAL_PROVIDER_FIELD_DESCRIPTOR =
-                CoTaskMemAlloc(size_of::<CREDENTIAL_PROVIDER_FIELD_DESCRIPTOR>())
-                    as *mut CREDENTIAL_PROVIDER_FIELD_DESCRIPTOR;
-            let field = match dwindex {
-                0 => {
-                    let wide: Vec<u16> = OsString::from("Icon").encode_wide().chain([0]).collect();
-                    let size = wide.len() * size_of::<u16>();
-                    let label = CoTaskMemAlloc(size) as *mut u16;
-                    label.copy_from_nonoverlapping(wide.as_ptr(), wide.len());
-
-                    CREDENTIAL_PROVIDER_FIELD_DESCRIPTOR {
-                        dwFieldID: 0,
-                        cpft: CPFT_TILE_IMAGE,
-                        pszLabel: PWSTR(label),
-                        guidFieldType: CPFG_CREDENTIAL_PROVIDER_LOGO,
-                    }
-                }
-                1 => {
-                    let wide: Vec<u16> = OsString::from("Label").encode_wide().chain([0]).collect();
-                    let size = wide.len() * size_of::<u16>();
-                    let label = CoTaskMemAlloc(size) as *mut u16;
-                    label.copy_from_nonoverlapping(wide.as_ptr(), wide.len());
-
-                    CREDENTIAL_PROVIDER_FIELD_DESCRIPTOR {
-                        dwFieldID: 1,
-                        cpft: CPFT_LARGE_TEXT,
-                        pszLabel: PWSTR(label),
-                        guidFieldType: CPFG_CREDENTIAL_PROVIDER_LABEL,
-                    }
-                }
-                2 => {
-                    let wide: Vec<u16> =
-                        OsString::from("Submit").encode_wide().chain([0]).collect();
-                    let size = wide.len() * size_of::<u16>();
-                    let label = CoTaskMemAlloc(size) as *mut u16;
-                    label.copy_from_nonoverlapping(wide.as_ptr(), wide.len());
-
-                    CREDENTIAL_PROVIDER_FIELD_DESCRIPTOR {
-                        dwFieldID: 2,
-                        cpft: CPFT_SUBMIT_BUTTON,
-                        pszLabel: PWSTR(label),
-                        guidFieldType: CPFG_STANDALONE_SUBMIT_BUTTON,
-                    }
-                }
-                _ => return Err(E_NOTIMPL.into()),
-            };
-
-            mem.write(field);
-
-            Ok(mem)
-        }
+        return Err(E_NOTIMPL.into());
     }
 
     fn GetCredentialCount(
@@ -117,10 +84,18 @@ impl ICredentialProvider_Impl for CredentialProvider_Impl {
         pdwdefault: *mut u32,
         pbautologonwithdefault: *mut windows_core::BOOL,
     ) -> windows_core::Result<()> {
-        unsafe {
-            *pdwcount = 1;
-            *pdwdefault = 0;
-            *pbautologonwithdefault = false.into();
+        if let Some(_) = *self.username.borrow() {
+            unsafe {
+                *pdwcount = 1;
+                *pdwdefault = 0;
+                *pbautologonwithdefault = true.into();
+            }
+        } else {
+            unsafe {
+                *pdwcount = 0;
+                *pdwdefault = 0;
+                *pbautologonwithdefault = true.into();
+            }
         }
         Ok(())
     }
@@ -129,6 +104,15 @@ impl ICredentialProvider_Impl for CredentialProvider_Impl {
         &self,
         dwindex: u32,
     ) -> windows_core::Result<windows::Win32::UI::Shell::ICredentialProviderCredential> {
-        Ok(CredentialProviderCredential::CredentialProviderCredential().into())
+        if self.password.borrow().is_some() && self.username.borrow().is_some() {
+            Ok(CredentialProviderCredential::CredentialProviderCredential {
+                computername: self.computername.clone(),
+                username: self.username.borrow().clone().unwrap(),
+                password: self.password.borrow().clone().unwrap(),
+            }
+            .into())
+        } else {
+            Err(E_NOTIMPL.into())
+        }
     }
 }
