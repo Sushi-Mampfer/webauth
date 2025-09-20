@@ -24,6 +24,35 @@ pub struct CredentialProviderCredential {
     pub password: String,
 }
 
+impl CredentialProviderCredential {
+    fn user(&self) -> PWSTR {
+        unsafe {
+            let wide: Vec<u16> =
+                OsString::from(format!("{}\\{}", self.computername, self.username))
+                    .encode_wide()
+                    .chain([0])
+                    .collect();
+            let size = wide.len() * size_of::<u16>();
+            let label = CoTaskMemAlloc(size) as *mut u16;
+            label.copy_from_nonoverlapping(wide.as_ptr(), wide.len());
+            PWSTR(label)
+        }
+    }
+
+    fn pasw(&self) -> PWSTR {
+        unsafe {
+            let wide: Vec<u16> = OsString::from(format!("{}", self.password))
+                .encode_wide()
+                .chain([0])
+                .collect();
+            let size = wide.len() * size_of::<u16>();
+            let label = CoTaskMemAlloc(size) as *mut u16;
+            label.copy_from_nonoverlapping(wide.as_ptr(), wide.len());
+            PWSTR(label)
+        }
+    }
+}
+
 impl ICredentialProviderCredential_Impl for CredentialProviderCredential_Impl {
     fn Advise(
         &self,
@@ -50,54 +79,18 @@ impl ICredentialProviderCredential_Impl for CredentialProviderCredential_Impl {
         pcpfs: *mut windows::Win32::UI::Shell::CREDENTIAL_PROVIDER_FIELD_STATE,
         pcpfis: *mut windows::Win32::UI::Shell::CREDENTIAL_PROVIDER_FIELD_INTERACTIVE_STATE,
     ) -> windows_core::Result<()> {
-        unsafe {
-            match dwfieldid {
-                0 => {
-                    *pcpfs = CPFS_DISPLAY_IN_BOTH;
-                    *pcpfis = CPFIS_NONE;
-                    Ok(())
-                }
-                1 => {
-                    *pcpfs = CPFS_DISPLAY_IN_BOTH;
-                    *pcpfis = CPFIS_NONE;
-                    Ok(())
-                }
-                2 => {
-                    *pcpfs = CPFS_DISPLAY_IN_BOTH;
-                    *pcpfis = CPFIS_NONE;
-                    Ok(())
-                }
-                _ => Err(E_NOTIMPL.into()),
-            }
-        }
+        Err(E_NOTIMPL.into())
     }
 
     fn GetStringValue(&self, dwfieldid: u32) -> windows_core::Result<windows_core::PWSTR> {
-        unsafe {
-            let wide: Vec<u16> = OsString::from("Test Provider")
-                .encode_wide()
-                .chain([0])
-                .collect();
-            let size = wide.len() * size_of::<u16>();
-            let label = CoTaskMemAlloc(size) as *mut u16;
-            label.copy_from_nonoverlapping(wide.as_ptr(), wide.len());
-            Ok(PWSTR(label))
-        }
+        Err(E_NOTIMPL.into())
     }
 
     fn GetBitmapValue(
         &self,
         dwfieldid: u32,
     ) -> windows_core::Result<windows::Win32::Graphics::Gdi::HBITMAP> {
-        unsafe {
-            let hdc = CreateCompatibleDC(None);
-            let map = CreateCompatibleBitmap(hdc, 10, 10);
-            let map = SelectObject(hdc, map.into());
-            PatBlt(hdc, 0, 0, 10, 10, BLACKNESS);
-            let map = SelectObject(hdc, map);
-            DeleteDC(hdc);
-            Ok(HBITMAP(map.0))
-        }
+        Err(E_NOTIMPL.into())
     }
 
     fn GetCheckboxValue(
@@ -177,8 +170,8 @@ impl ICredentialProviderCredential_Impl for CredentialProviderCredential_Impl {
 
             let result = CredPackAuthenticationBufferW(
                 CRED_PACK_PROTECTED_CREDENTIALS,
-                user(),
-                pasw(),
+                self.user(),
+                self.pasw(),
                 Some(buffer),
                 &mut buffer_size,
             );
@@ -209,28 +202,5 @@ impl ICredentialProviderCredential_Impl for CredentialProviderCredential_Impl {
         pcpsioptionalstatusicon: *mut windows::Win32::UI::Shell::CREDENTIAL_PROVIDER_STATUS_ICON,
     ) -> windows_core::Result<()> {
         Ok(())
-    }
-}
-
-fn user() -> PWSTR {
-    unsafe {
-        let wide: Vec<u16> = OsString::from("SUSHI-MAMPFER\\test")
-            .encode_wide()
-            .chain([0])
-            .collect();
-        let size = wide.len() * size_of::<u16>();
-        let label = CoTaskMemAlloc(size) as *mut u16;
-        label.copy_from_nonoverlapping(wide.as_ptr(), wide.len());
-        PWSTR(label)
-    }
-}
-
-fn pasw() -> PWSTR {
-    unsafe {
-        let wide: Vec<u16> = OsString::from("Test").encode_wide().chain([0]).collect();
-        let size = wide.len() * size_of::<u16>();
-        let label = CoTaskMemAlloc(size) as *mut u16;
-        label.copy_from_nonoverlapping(wide.as_ptr(), wide.len());
-        PWSTR(label)
     }
 }
