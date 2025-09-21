@@ -77,12 +77,10 @@ async fn main() {
             }
         });
     }
-    dbg!("some");
 
     let app = Router::new().route("/", get(login));
 
     let listener = tokio::net::TcpListener::bind("0.0.0.0:4242").await.unwrap();
-    dbg!("Bound to: 0.0.0.0:4242");
     axum::serve(listener, app).await.unwrap();
 }
 
