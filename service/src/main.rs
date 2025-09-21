@@ -89,7 +89,7 @@ async fn login(Query(params): Query<HashMap<String, String>>) -> impl IntoRespon
     if !CONNECTED.load(Ordering::Relaxed) {
         return "no connection".to_string();
     }
-    if let (Some(username), Some(passwd)) = (params.get("username"), params.get("passwd")) {
+    if let (Some(username), Some(passwd)) = (params.get("user"), params.get("passwd")) {
         let message = format!("{};{}", username, passwd);
         let result =
             unsafe { WriteFile(PIPE.get().unwrap().0, Some(message.as_bytes()), None, None) };
