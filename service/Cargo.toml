@@ -1,6 +1,19 @@
 [package]
-name = "service"
+name = "webauth-service"
 version = "0.1.0"
 edition = "2024"
 
+[[bin]]
+name = "webauth"
+path = "src/main.rs"
+
 [dependencies]
+axum = "0.8.4"
+tokio = { version = "1.47.1", features = ["full"] }
+windows = { version = "0.62.0", features = [
+    "Win32_Security",
+    "Win32_Storage_FileSystem",
+    "Win32_System_IO",
+    "Win32_System_Pipes",
+] }
+windows-core = "0.62.0"

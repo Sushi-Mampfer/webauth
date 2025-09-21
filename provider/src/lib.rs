@@ -1,12 +1,25 @@
+use std::ffi::{OsStr, OsString};
+use std::fs::OpenOptions;
+use std::io::Write;
+use std::os::windows::ffi::OsStrExt;
+use std::thread::{sleep, spawn};
+use std::time::Duration;
 use std::{ffi, mem, ptr};
 
+use windows::Wdk::System::SystemServices::DbgPrint;
 use windows::Win32::Foundation::{
-    CLASS_E_CLASSNOTAVAILABLE, CLASS_E_NOAGGREGATION, E_INVALIDARG, E_NOINTERFACE, E_NOTIMPL,
-    E_POINTER, S_OK,
+    CLASS_E_CLASSNOTAVAILABLE, CLASS_E_NOAGGREGATION, CloseHandle, E_INVALIDARG, E_NOINTERFACE,
+    E_NOTIMPL, E_POINTER, GENERIC_READ, GENERIC_WRITE, GetLastError, HANDLE, INVALID_HANDLE_VALUE,
+    S_OK,
+};
+use windows::Win32::Storage::FileSystem::{
+    CreateFileW, FILE_ATTRIBUTE_NORMAL, FILE_SHARE_NONE, FILE_SHARE_READ, FILE_SHARE_WRITE,
+    OPEN_EXISTING, ReadFile, WriteFile,
 };
 use windows::Win32::System::Com::{IClassFactory, IClassFactory_Impl};
+use windows::Win32::System::Diagnostics::Debug::OutputDebugStringW;
 use windows::Win32::UI::Shell::ICredentialProvider;
-use windows_core::{BOOL, GUID, HRESULT, IUnknown, Interface, implement};
+use windows_core::{BOOL, GUID, HRESULT, IUnknown, Interface, PCWSTR, PWSTR, implement};
 
 #[allow(non_snake_case)]
 mod CredentialProvider;
@@ -52,6 +65,17 @@ extern "system" fn DllCanUnloadNow() -> HRESULT {
     S_OK
 }
 
+struct SendableProvider(CredentialProvider::CredentialProvider);
+
+unsafe impl Send for SendableProvider {}
+unsafe impl Sync for SendableProvider {}
+
+impl SendableProvider {
+    fn update(&self, username: String, password: String) {
+        self.0.update(username, password)
+    }
+}
+
 #[implement(IClassFactory)]
 struct ProviderFactory;
 
@@ -80,10 +104,62 @@ impl IClassFactory_Impl for ProviderFactory_Impl {
 
         let provider = match CredentialProvider::CredentialProvider::new() {
             Some(p) => p,
-            _ => return Err(E_NOINTERFACE.into()),
+            _ => {
+                return Err(E_NOINTERFACE.into());
+            }
         };
+
+        let provider2 = SendableProvider(provider.clone());
         let provider: ICredentialProvider = provider.into();
-        unsafe { *ppvobject = mem::transmute(provider) };
+
+        spawn(move || {
+            let pipe_name: Vec<u16> = OsString::from("\\\\.\\pipe\\webauth")
+                .encode_wide()
+                .chain([0])
+                .collect();
+            let pipe = unsafe {
+                CreateFileW(
+                    PCWSTR(pipe_name.as_ptr()),
+                    GENERIC_READ.0,
+                    FILE_SHARE_NONE,
+                    None,
+                    OPEN_EXISTING,
+                    FILE_ATTRIBUTE_NORMAL,
+                    None,
+                )
+            };
+            let pipe = match pipe {
+                Ok(p) => p,
+                Err(e) => {
+                    return;
+                }
+            };
+            if pipe == INVALID_HANDLE_VALUE {
+                return;
+            }
+            let mut buffer = [0u8; 512];
+            let mut bytes_read = 0u32;
+            loop {
+                match unsafe { ReadFile(pipe, Some(&mut buffer), Some(&mut bytes_read), None) } {
+                    Ok(_) => {
+                        let message = &buffer[..bytes_read as usize];
+                        if message == b"ping" {
+                            sleep(Duration::from_secs(1));
+                            continue;
+                        }
+                        let message = String::from_utf8_lossy(message);
+                        if let Some((username, password)) = message.split_once(';') {
+                            provider2.update(username.to_string(), password.to_string())
+                        }
+                    }
+                    Err(_) => sleep(Duration::from_secs(1)),
+                }
+            }
+        });
+
+        unsafe {
+            *ppvobject = mem::transmute(provider);
+        }
         Ok(())
     }
 
