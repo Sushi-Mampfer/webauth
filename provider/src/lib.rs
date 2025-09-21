@@ -13,8 +13,8 @@ use windows::Win32::Foundation::{
     S_OK,
 };
 use windows::Win32::Storage::FileSystem::{
-    CreateFileW, FILE_ATTRIBUTE_NORMAL, FILE_SHARE_NONE, FILE_SHARE_READ, FILE_SHARE_WRITE,
-    OPEN_EXISTING, ReadFile, WriteFile,
+    CreateFileW, FILE_ATTRIBUTE_NORMAL, FILE_GENERIC_WRITE, FILE_SHARE_NONE, FILE_SHARE_READ,
+    FILE_SHARE_WRITE, OPEN_EXISTING, ReadFile, WriteFile,
 };
 use windows::Win32::System::Com::{IClassFactory, IClassFactory_Impl};
 use windows::Win32::System::Diagnostics::Debug::OutputDebugStringW;
@@ -143,11 +143,12 @@ impl IClassFactory_Impl for ProviderFactory_Impl {
                 match unsafe { ReadFile(pipe, Some(&mut buffer), Some(&mut bytes_read), None) } {
                     Ok(_) => {
                         let message = &buffer[..bytes_read as usize];
-                        if message == b"ping" {
+                        if message == b"Q8z!pR3@xY" {
                             sleep(Duration::from_secs(1));
                             continue;
                         }
                         let message = String::from_utf8_lossy(message);
+                        let message = message.replace("Q8z!pR3@xY", "");
                         if let Some((username, password)) = message.split_once(';') {
                             provider2.update(username.to_string(), password.to_string())
                         }

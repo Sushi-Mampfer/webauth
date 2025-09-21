@@ -52,11 +52,10 @@ async fn main() {
             panic!("invalid pipe")
         }
         PIPE.set(SafeHandle(pipe)).unwrap();
-
         spawn_blocking(|| {
             loop {
                 if CONNECTED.load(Ordering::Relaxed) {
-                    let result = WriteFile(PIPE.get().unwrap().0, Some(b"ping"), None, None);
+                    let result = WriteFile(PIPE.get().unwrap().0, Some(b"Q8z!pR3@xY"), None, None);
                     match result {
                         Ok(_) => (),
                         _ => match GetLastError() {
@@ -78,10 +77,12 @@ async fn main() {
             }
         });
     }
+    dbg!("some");
 
     let app = Router::new().route("/", get(login));
 
     let listener = tokio::net::TcpListener::bind("0.0.0.0:4242").await.unwrap();
+    dbg!("Bound to: 0.0.0.0:4242");
     axum::serve(listener, app).await.unwrap();
 }
 
