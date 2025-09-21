@@ -1,27 +1,16 @@
 use std::{
-    cell::RefCell,
     env::var,
-    ffi::OsString,
-    ops::Deref,
-    os::windows::ffi::OsStrExt,
     sync::{Arc, Mutex},
 };
 
 use windows::Win32::{
-    Foundation::{E_NOTIMPL, GENERIC_WRITE, S_FALSE},
-    Storage::FileSystem::{
-        CreateFileW, FILE_ATTRIBUTE_NORMAL, FILE_SHARE_WRITE, OPEN_EXISTING, WriteFile,
-    },
-    System::Com::CoTaskMemAlloc,
+    Foundation::{E_NOTIMPL, S_FALSE},
     UI::Shell::{
-        CPFG_CREDENTIAL_PROVIDER_LABEL, CPFG_CREDENTIAL_PROVIDER_LOGO,
-        CPFG_STANDALONE_SUBMIT_BUTTON, CPFT_LARGE_TEXT, CPFT_SUBMIT_BUTTON, CPFT_TILE_IMAGE,
-        CPUS_LOGON, CPUS_UNLOCK_WORKSTATION, CREDENTIAL_PROVIDER_FIELD_DESCRIPTOR,
-        CREDENTIAL_PROVIDER_USAGE_SCENARIO, ICredentialProvider, ICredentialProvider_Impl,
-        ICredentialProviderEvents,
+        CPUS_LOGON, CPUS_UNLOCK_WORKSTATION, CREDENTIAL_PROVIDER_USAGE_SCENARIO,
+        ICredentialProvider, ICredentialProvider_Impl, ICredentialProviderEvents,
     },
 };
-use windows_core::{PCWSTR, PWSTR, Ref, implement};
+use windows_core::implement;
 
 use crate::CredentialProviderCredential;
 
@@ -63,7 +52,7 @@ impl ICredentialProvider_Impl for CredentialProvider_Impl {
     fn SetUsageScenario(
         &self,
         cpus: CREDENTIAL_PROVIDER_USAGE_SCENARIO,
-        dwflags: u32,
+        _dwflags: u32,
     ) -> windows_core::Result<()> {
         match cpus {
             CPUS_LOGON | CPUS_UNLOCK_WORKSTATION => Ok(()),
@@ -73,7 +62,7 @@ impl ICredentialProvider_Impl for CredentialProvider_Impl {
 
     fn SetSerialization(
         &self,
-        pcpcs: *const windows::Win32::UI::Shell::CREDENTIAL_PROVIDER_CREDENTIAL_SERIALIZATION,
+        _pcpcs: *const windows::Win32::UI::Shell::CREDENTIAL_PROVIDER_CREDENTIAL_SERIALIZATION,
     ) -> windows_core::Result<()> {
         Err(S_FALSE.into())
     }
@@ -99,7 +88,7 @@ impl ICredentialProvider_Impl for CredentialProvider_Impl {
 
     fn GetFieldDescriptorAt(
         &self,
-        dwindex: u32,
+        _dwindex: u32,
     ) -> windows_core::Result<*mut windows::Win32::UI::Shell::CREDENTIAL_PROVIDER_FIELD_DESCRIPTOR>
     {
         return Err(E_NOTIMPL.into());
@@ -129,7 +118,7 @@ impl ICredentialProvider_Impl for CredentialProvider_Impl {
 
     fn GetCredentialAt(
         &self,
-        dwindex: u32,
+        _dwindex: u32,
     ) -> windows_core::Result<windows::Win32::UI::Shell::ICredentialProviderCredential> {
         let username = self.username.lock().unwrap().clone();
         let password = self.password.lock().unwrap().clone();

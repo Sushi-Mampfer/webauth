@@ -1,18 +1,12 @@
 use std::{ffi::OsString, os::windows::ffi::OsStrExt};
 
 use windows::Win32::{
-    Foundation::{E_NOTIMPL, NOERROR},
-    Graphics::Gdi::{
-        BLACKNESS, CreateCompatibleBitmap, CreateCompatibleDC, DeleteDC, HBITMAP, PatBlt,
-        SelectObject,
-    },
+    Foundation::E_NOTIMPL,
     Security::Credentials::{CRED_PACK_PROTECTED_CREDENTIALS, CredPackAuthenticationBufferW},
     System::Com::CoTaskMemAlloc,
     UI::Shell::{
-        CPFIS_NONE, CPFS_DISPLAY_IN_BOTH, CPGSR_NO_CREDENTIAL_FINISHED,
         CPGSR_RETURN_CREDENTIAL_FINISHED, CREDENTIAL_PROVIDER_CREDENTIAL_SERIALIZATION,
         ICredentialProviderCredential, ICredentialProviderCredential_Impl,
-        ICredentialProviderCredentialEvents,
     },
 };
 use windows_core::{GUID, PWSTR, implement};
@@ -56,7 +50,7 @@ impl CredentialProviderCredential {
 impl ICredentialProviderCredential_Impl for CredentialProviderCredential_Impl {
     fn Advise(
         &self,
-        pcpce: windows_core::Ref<windows::Win32::UI::Shell::ICredentialProviderCredentialEvents>,
+        _pcpce: windows_core::Ref<windows::Win32::UI::Shell::ICredentialProviderCredentialEvents>,
     ) -> windows_core::Result<()> {
         Err(E_NOTIMPL.into())
     }
@@ -75,40 +69,40 @@ impl ICredentialProviderCredential_Impl for CredentialProviderCredential_Impl {
 
     fn GetFieldState(
         &self,
-        dwfieldid: u32,
-        pcpfs: *mut windows::Win32::UI::Shell::CREDENTIAL_PROVIDER_FIELD_STATE,
-        pcpfis: *mut windows::Win32::UI::Shell::CREDENTIAL_PROVIDER_FIELD_INTERACTIVE_STATE,
+        _dwfieldid: u32,
+        _pcpfs: *mut windows::Win32::UI::Shell::CREDENTIAL_PROVIDER_FIELD_STATE,
+        _pcpfis: *mut windows::Win32::UI::Shell::CREDENTIAL_PROVIDER_FIELD_INTERACTIVE_STATE,
     ) -> windows_core::Result<()> {
         Err(E_NOTIMPL.into())
     }
 
-    fn GetStringValue(&self, dwfieldid: u32) -> windows_core::Result<windows_core::PWSTR> {
+    fn GetStringValue(&self, _dwfieldid: u32) -> windows_core::Result<windows_core::PWSTR> {
         Err(E_NOTIMPL.into())
     }
 
     fn GetBitmapValue(
         &self,
-        dwfieldid: u32,
+        _dwfieldid: u32,
     ) -> windows_core::Result<windows::Win32::Graphics::Gdi::HBITMAP> {
         Err(E_NOTIMPL.into())
     }
 
     fn GetCheckboxValue(
         &self,
-        dwfieldid: u32,
-        pbchecked: *mut windows_core::BOOL,
-        ppszlabel: *mut windows_core::PWSTR,
+        _dwfieldidd: u32,
+        _pbchecked: *mut windows_core::BOOL,
+        _ppszlabel: *mut windows_core::PWSTR,
     ) -> windows_core::Result<()> {
         Err(E_NOTIMPL.into())
     }
 
-    fn GetSubmitButtonValue(&self, dwfieldid: u32) -> windows_core::Result<u32> {
+    fn GetSubmitButtonValue(&self, _dwfieldid: u32) -> windows_core::Result<u32> {
         Ok(1)
     }
 
     fn GetComboBoxValueCount(
         &self,
-        dwfieldid: u32,
+        _dwfieldid: u32,
         pcitems: *mut u32,
         pdwselecteditem: *mut u32,
     ) -> windows_core::Result<()> {
@@ -121,37 +115,37 @@ impl ICredentialProviderCredential_Impl for CredentialProviderCredential_Impl {
 
     fn GetComboBoxValueAt(
         &self,
-        dwfieldid: u32,
-        dwitem: u32,
+        _dwfieldid: u32,
+        _dwitem: u32,
     ) -> windows_core::Result<windows_core::PWSTR> {
         Err(E_NOTIMPL.into())
     }
 
     fn SetStringValue(
         &self,
-        dwfieldid: u32,
-        psz: &windows_core::PCWSTR,
+        _dwfieldid: u32,
+        _psz: &windows_core::PCWSTR,
     ) -> windows_core::Result<()> {
         Err(E_NOTIMPL.into())
     }
 
     fn SetCheckboxValue(
         &self,
-        dwfieldid: u32,
-        bchecked: windows_core::BOOL,
+        _dwfieldid: u32,
+        _bchecked: windows_core::BOOL,
     ) -> windows_core::Result<()> {
         Err(E_NOTIMPL.into())
     }
 
     fn SetComboBoxSelectedValue(
         &self,
-        dwfieldid: u32,
-        dwselecteditem: u32,
+        _dwfieldid: u32,
+        _dwselecteditem: u32,
     ) -> windows_core::Result<()> {
         Err(E_NOTIMPL.into())
     }
 
-    fn CommandLinkClicked(&self, dwfieldid: u32) -> windows_core::Result<()> {
+    fn CommandLinkClicked(&self, _dwfieldid: u32) -> windows_core::Result<()> {
         Err(E_NOTIMPL.into())
     }
 
@@ -196,10 +190,10 @@ impl ICredentialProviderCredential_Impl for CredentialProviderCredential_Impl {
 
     fn ReportResult(
         &self,
-        ntsstatus: windows::Win32::Foundation::NTSTATUS,
-        ntssubstatus: windows::Win32::Foundation::NTSTATUS,
-        ppszoptionalstatustext: *mut windows_core::PWSTR,
-        pcpsioptionalstatusicon: *mut windows::Win32::UI::Shell::CREDENTIAL_PROVIDER_STATUS_ICON,
+        _ntsstatus: windows::Win32::Foundation::NTSTATUS,
+        _ntssubstatus: windows::Win32::Foundation::NTSTATUS,
+        _ppszoptionalstatustext: *mut windows_core::PWSTR,
+        _pcpsioptionalstatusicon: *mut windows::Win32::UI::Shell::CREDENTIAL_PROVIDER_STATUS_ICON,
     ) -> windows_core::Result<()> {
         Ok(())
     }

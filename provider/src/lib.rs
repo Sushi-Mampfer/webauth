@@ -1,25 +1,19 @@
-use std::ffi::{OsStr, OsString};
-use std::fs::OpenOptions;
-use std::io::Write;
+use std::ffi::OsString;
 use std::os::windows::ffi::OsStrExt;
 use std::thread::{sleep, spawn};
 use std::time::Duration;
 use std::{ffi, mem, ptr};
 
-use windows::Wdk::System::SystemServices::DbgPrint;
 use windows::Win32::Foundation::{
-    CLASS_E_CLASSNOTAVAILABLE, CLASS_E_NOAGGREGATION, CloseHandle, E_INVALIDARG, E_NOINTERFACE,
-    E_NOTIMPL, E_POINTER, GENERIC_READ, GENERIC_WRITE, GetLastError, HANDLE, INVALID_HANDLE_VALUE,
-    S_OK,
+    CLASS_E_CLASSNOTAVAILABLE, CLASS_E_NOAGGREGATION, E_INVALIDARG, E_NOINTERFACE, E_NOTIMPL,
+    E_POINTER, GENERIC_READ, INVALID_HANDLE_VALUE, S_OK,
 };
 use windows::Win32::Storage::FileSystem::{
-    CreateFileW, FILE_ATTRIBUTE_NORMAL, FILE_GENERIC_WRITE, FILE_SHARE_NONE, FILE_SHARE_READ,
-    FILE_SHARE_WRITE, OPEN_EXISTING, ReadFile, WriteFile,
+    CreateFileW, FILE_ATTRIBUTE_NORMAL, FILE_SHARE_NONE, OPEN_EXISTING, ReadFile,
 };
 use windows::Win32::System::Com::{IClassFactory, IClassFactory_Impl};
-use windows::Win32::System::Diagnostics::Debug::OutputDebugStringW;
 use windows::Win32::UI::Shell::ICredentialProvider;
-use windows_core::{BOOL, GUID, HRESULT, IUnknown, Interface, PCWSTR, PWSTR, implement};
+use windows_core::{BOOL, GUID, HRESULT, IUnknown, Interface, PCWSTR, implement};
 
 #[allow(non_snake_case)]
 mod CredentialProvider;
@@ -130,7 +124,7 @@ impl IClassFactory_Impl for ProviderFactory_Impl {
             };
             let pipe = match pipe {
                 Ok(p) => p,
-                Err(e) => {
+                Err(_) => {
                     return;
                 }
             };
