@@ -29,3 +29,7 @@ NlaSvc
 ### Security
 - The service is bound to all interfaces and therefore anyone that can access port 4242 can try to unlock your pc
 - Nothing is encrypted, everyone in your network is able to read your username and password
+
+### Credits
+- https://github.com/SubconsciousCompute/windows-credential-provider-rs
+- https://stackoverflow.com/questions/75279682/implementing-a-windows-credential-provider
